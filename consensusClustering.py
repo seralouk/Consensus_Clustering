@@ -2,7 +2,7 @@ import numpy as np
 from itertools import combinations
 import bisect
 
-
+# custom function
 def ij2k(index,N):
     """
     Builds linear indices from (i,j) multi-index
@@ -91,25 +91,21 @@ class ConsensusCluster:
                     # sometimes only one element is in a cluster (no combinations)
                     if ids_.size != 0:
                         #Mk[i_, ids_[0], ids_[1]] +=1
-                        index_pairs = [(row,col) for row,col in zip(ids_[0], ids_[1])]
-                        linear_indices = [ij2k(index, data.shape[0]) for index in index_pairs]
-                        Mk[i_, linear_indices] += 1
+                        index_pairs = [(row,col) for row,col in zip(ids_[0], ids_[1])] # get (i,j) pairs
+                        linear_indices = [ij2k(index, data.shape[0]) for index in index_pairs] # get linear indices
+                        Mk[i_, linear_indices] += 1 
                 # increment counts
                 ids_2 = np.array(list(combinations(resampled_indices, 2))).T
                 #Is[ids_2[0], ids_2[1]] += 1
-                index_pairs_2 = [(row,col) for row,col in zip(ids_2[0], ids_2[1])]
-                linear_indices_2 = [ij2k(index, data.shape[0]) for index in index_pairs_2]
-                Is[linear_indices_2] += 1
+                index_pairs_2 = [(row,col) for row,col in zip(ids_2[0], ids_2[1])] # get (i,j) pairs
+                linear_indices_2 = [ij2k(index, data.shape[0]) for index in index_pairs_2] # get linear indices
+                Is[linear_indices_2] += 1 # this is probably not correct since Is is not symmetric in the original implementation...
 
             Mk[i_] /= Is+1e-8  # consensus matrix
             # Mk[i_] is upper triangular (with zeros on diagonal), we now make it symmetric
             #Mk[i_] += Mk[i_].T
             #Mk[i_, range(data.shape[0]), range(
             #    data.shape[0])] = 1  # always with self
-
-            #ndex_pairs_3 = [(row,col) for row,col in zip(range(data.shape[0]), range(data.shape[0]))]
-            #linear_indices_3 = [multi_to_vectorized_index(index, data.shape[0]) for index in index_pairs_3]
-            #Mk[i_, linear_indices_3] = 1  # always with self
             Is.fill(0)  # reset counter
         
         self.Mk = Mk
