@@ -9,7 +9,16 @@ def multi_to_vectorized_index(index, N):
       * index -> (i,j) format indices to be converted to linear flatten indices
       * N: the shape of the matrix that the indices are coming from (tuple)
     """
-    return int((N*(N-1)/2) -((N-index[0])*(N-index[0]-1))/2 + index[1])
+    return int((N*(N-1)/2) - (((N-index[0])*(N-index[0]-1))/2) + index[1])
+
+def ij2k(index,N):
+    """
+    Builds linear indices from (i,j) multi-index
+    Args:
+      * index -> (i,j) format indices to be converted to linear flatten indices
+      * N: the shape of the matrix that the indices are coming from (tuple)
+    """
+    return int((N*(N-1)/2) - (N-index[0])*((N-index[0])-1)/2 + index[1] - index[0] - 1)
 
 class ConsensusCluster:
     """
@@ -91,13 +100,15 @@ class ConsensusCluster:
                     if ids_.size != 0:
                         #Mk[i_, ids_[0], ids_[1]] +=1
                         index_pairs = [(row,col) for row,col in zip(ids_[0], ids_[1])]
-                        linear_indices = [multi_to_vectorized_index(index, data.shape[0]) for index in index_pairs]
+                        #linear_indices = [multi_to_vectorized_index(index, data.shape[0]) for index in index_pairs]
+                        linear_indices = [ij2k(index, data.shape[0]) for index in index_pairs]
                         Mk[i_, linear_indices] += 1
                 # increment counts
                 ids_2 = np.array(list(combinations(resampled_indices, 2))).T
                 #Is[ids_2[0], ids_2[1]] += 1
                 index_pairs_2 = [(row,col) for row,col in zip(ids_2[0], ids_2[1])]
-                linear_indices_2 = [multi_to_vectorized_index(index, data.shape[0]) for index in index_pairs_2]
+                #linear_indices_2 = [multi_to_vectorized_index(index, data.shape[0]) for index in index_pairs_2]
+                linear_indices_2 = [ij2k(index, data.shape[0]) for index in index_pairs_2]
                 Is[linear_indices_2] += 1
 
             Mk[i_] /= Is+1e-8  # consensus matrix
@@ -105,15 +116,21 @@ class ConsensusCluster:
             #Mk[i_] += Mk[i_].T
             #Mk[i_, range(data.shape[0]), range(
             #    data.shape[0])] = 1  # always with self
-            index_pairs_3 = [(row,col) for row,col in zip(range(data.shape[0]), range(data.shape[0]))]
-            linear_indices_3 = [multi_to_vectorized_index(index, data.shape[0]) for index in index_pairs_3]
-            Mk[i_, linear_indices_3] = 1  # always with self
+
+            #ndex_pairs_3 = [(row,col) for row,col in zip(range(data.shape[0]), range(data.shape[0]))]
+            #linear_indices_3 = [multi_to_vectorized_index(index, data.shape[0]) for index in index_pairs_3]
+            #Mk[i_, linear_indices_3] = 1  # always with self
             Is.fill(0)  # reset counter
+        
         self.Mk = Mk
         # fits areas under the CDFs
         self.Ak = np.zeros(self.K_-self.L_)
         for i, m in enumerate(Mk):
-            hist, bins = np.histogram(m.ravel(), density=True)
+            #hist, bins = np.histogram(m.ravel(), density=True)
+            m_full = np.repeat(m.ravel(), 2) # duplicate the vector (includes only upper triangle)
+            m_full = np.concatenate([m_full, np.ones((data.shape[0],))]) # add diagonal
+            hist, bins = np.histogram(m_full, density=True)
+
             self.Ak[i] = np.sum(h*(b-a)
                              for b, a, h in zip(bins[1:], bins[:-1], np.cumsum(hist)))
         # fits differences between areas under CDFs
