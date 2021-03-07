@@ -2,14 +2,6 @@ import numpy as np
 from itertools import combinations
 import bisect
 
-def multi_to_vectorized_index(index, N):
-    """
-    Builds linear indices from (i,j) multi-index
-    Args:
-      * index -> (i,j) format indices to be converted to linear flatten indices
-      * N: the shape of the matrix that the indices are coming from (tuple)
-    """
-    return int((N*(N-1)/2) - (((N-index[0])*(N-index[0]-1))/2) + index[1])
 
 def ij2k(index,N):
     """
@@ -72,7 +64,7 @@ class ConsensusCluster:
           * data -> (examples,attributes) format
           * verbose -> should print or not
         """
-        flat_ = int( (data.shape[0]**2 + data.shape[0])/2) # do not build symmetrix amtrix, instead use vectors
+        flat_ = int( (data.shape[0]*(data.shape[0]-1))/2)# do not build symmetrix matrix,use vectors instead
         Mk = np.zeros((self.K_-self.L_, flat_))
         Is = np.zeros((flat_,))
         #Mk = np.zeros((self.K_-self.L_, data.shape[0], data.shape[0]))
@@ -100,14 +92,12 @@ class ConsensusCluster:
                     if ids_.size != 0:
                         #Mk[i_, ids_[0], ids_[1]] +=1
                         index_pairs = [(row,col) for row,col in zip(ids_[0], ids_[1])]
-                        #linear_indices = [multi_to_vectorized_index(index, data.shape[0]) for index in index_pairs]
                         linear_indices = [ij2k(index, data.shape[0]) for index in index_pairs]
                         Mk[i_, linear_indices] += 1
                 # increment counts
                 ids_2 = np.array(list(combinations(resampled_indices, 2))).T
                 #Is[ids_2[0], ids_2[1]] += 1
                 index_pairs_2 = [(row,col) for row,col in zip(ids_2[0], ids_2[1])]
-                #linear_indices_2 = [multi_to_vectorized_index(index, data.shape[0]) for index in index_pairs_2]
                 linear_indices_2 = [ij2k(index, data.shape[0]) for index in index_pairs_2]
                 Is[linear_indices_2] += 1
 
