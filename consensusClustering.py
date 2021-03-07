@@ -2,6 +2,14 @@ import numpy as np
 from itertools import combinations
 import bisect
 
+def multi_to_vectorized_index(index, N):
+    """
+    Builds linear indices from (i,j) multi-index
+    Args:
+      * index -> (i,j) format indices to be converted to linear flatten indices
+      * N: the shape of the matrix that the indices are coming from (tuple)
+    """
+    return int((N*(N-1)/2) -((N-index[0])*(N-index[0]-1))/2 + index[1])
 
 class ConsensusCluster:
     """
@@ -15,6 +23,7 @@ class ConsensusCluster:
         * K -> biggest number of clusters to try
         * H -> number of resamplings for each cluster number
         * resample_proportion -> percentage to sample
+        * n_jobs -> the number of cores to be used, default: -1 (all)
         * Mk -> consensus matrices for each k (shape =(K,data.shape[0],data.shape[0]))
                 (NOTE: every consensus matrix is retained, like specified in the paper)
         * Ak -> area under CDF for each number of clusters 
@@ -54,8 +63,11 @@ class ConsensusCluster:
           * data -> (examples,attributes) format
           * verbose -> should print or not
         """
-        Mk = np.zeros((self.K_-self.L_, data.shape[0], data.shape[0]))
-        Is = np.zeros((data.shape[0],)*2)
+        flat_ = int( (data.shape[0]**2 + data.shape[0])/2) # do not build symmetrix amtrix, instead use vectors
+        Mk = np.zeros((self.K_-self.L_, flat_))
+        Is = np.zeros((flat_,))
+        #Mk = np.zeros((self.K_-self.L_, data.shape[0], data.shape[0]))
+        #Is = np.zeros((data.shape[0],)*2)
         for k in range(self.L_, self.K_):  # for each number of clusters
             i_ = k-self.L_
             if verbose:
@@ -77,15 +89,25 @@ class ConsensusCluster:
                     ids_ = np.array(list(combinations(is_, 2))).T
                     # sometimes only one element is in a cluster (no combinations)
                     if ids_.size != 0:
-                        Mk[i_, ids_[0], ids_[1]] += 1
+                        #Mk[i_, ids_[0], ids_[1]] +=1
+                        index_pairs = [(row,col) for row,col in zip(ids_[0], ids_[1])]
+                        linear_indices = [multi_to_vectorized_index(index, data.shape[0]) for index in index_pairs]
+                        Mk[i_, linear_indices] += 1
                 # increment counts
                 ids_2 = np.array(list(combinations(resampled_indices, 2))).T
-                Is[ids_2[0], ids_2[1]] += 1
+                #Is[ids_2[0], ids_2[1]] += 1
+                index_pairs_2 = [(row,col) for row,col in zip(ids_2[0], ids_2[1])]
+                linear_indices_2 = [multi_to_vectorized_index(index, data.shape[0]) for index in index_pairs_2]
+                Is[linear_indices_2] += 1
+
             Mk[i_] /= Is+1e-8  # consensus matrix
             # Mk[i_] is upper triangular (with zeros on diagonal), we now make it symmetric
-            Mk[i_] += Mk[i_].T
-            Mk[i_, range(data.shape[0]), range(
-                data.shape[0])] = 1  # always with self
+            #Mk[i_] += Mk[i_].T
+            #Mk[i_, range(data.shape[0]), range(
+            #    data.shape[0])] = 1  # always with self
+            index_pairs_3 = [(row,col) for row,col in zip(range(data.shape[0]), range(data.shape[0]))]
+            linear_indices_3 = [multi_to_vectorized_index(index, data.shape[0]) for index in index_pairs_3]
+            Mk[i_, linear_indices_3] = 1  # always with self
             Is.fill(0)  # reset counter
         self.Mk = Mk
         # fits areas under the CDFs
@@ -117,3 +139,21 @@ class ConsensusCluster:
         assert self.Mk is not None, "First run fit"
         return self.cluster_(n_clusters=self.bestK).fit_predict(
             data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
