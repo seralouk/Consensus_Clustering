@@ -6,7 +6,7 @@ from consensusClustering import ConsensusCluster
 np.random.seed(0)
 
 # some data
-data = np.random.rand(100,30)
+data = np.random.rand(10,3)
 
 # the model
 model=ConsensusCluster(cluster=KMeans, L=2, K=10, H=2, resample_proportion=0.5)

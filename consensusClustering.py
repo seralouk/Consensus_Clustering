@@ -99,9 +99,9 @@ class ConsensusCluster:
                 #Is[ids_2[0], ids_2[1]] += 1
                 index_pairs_2 = [(row,col) for row,col in zip(ids_2[0], ids_2[1])] # get (i,j) pairs
                 linear_indices_2 = [ij2k(index, data.shape[0]) for index in index_pairs_2] # get linear indices
-                Is[linear_indices_2] += 1 # this is probably not correct since Is is not symmetric in the original implementation...
+                Is[linear_indices_2] += 1 # NOTE: this is probably not correct since Is is not symmetric in the original implementation...
 
-            Mk[i_] /= Is+1e-8  # consensus matrix
+            Mk[i_] /= Is+1e-8  # consensus matrix's upper triangle part only without the diagonal
             # Mk[i_] is upper triangular (with zeros on diagonal), we now make it symmetric
             #Mk[i_] += Mk[i_].T
             #Mk[i_, range(data.shape[0]), range(
