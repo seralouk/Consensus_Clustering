@@ -3,6 +3,8 @@ from sklearn.cluster import KMeans
 import numpy as np
 from consensusClustering import ConsensusCluster
 
+np.random.seed(0)
+
 # some data
 data = np.random.rand(10,5)
 
